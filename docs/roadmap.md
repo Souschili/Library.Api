@@ -5,14 +5,16 @@
 ## Сделано
 
 - Слои проекта: `Domain / Application / Infrastructure / Api` (Clean Architecture).
-- Базовые типы сущностей (`Library.Domain/Entities/Basic`):
-  - `Interfaces/IEntity<T>` — контракт `Id`.
-  - `BaseEntity<T>` / `BaseEntity` (= `BaseEntity<int>`) — реализация `Id`.
-  - `Interfaces/IAuditable` — `CreatedAt`, `UpdatedAt`, `CreatedBy`, `UpdatedBy`.
-  - `Interfaces/ISoftDeletable` — `IsDeleted`, `DeletedAt`, `DeletedBy`.
-  - Интерфейсы вынесены в подпапку `Basic/Interfaces` (namespace `Library.Domain.Entities.Basic.Interfaces`), классы остаются в `Basic`.
+- Базовые типы сущностей:
+  - `Library.Domain/Interfaces/IEntity<T>` — контракт `Id`.
+  - `Library.Domain/Entities/Basic/BaseEntity<T>` / `BaseEntity` (= `BaseEntity<int>`) — реализация `Id`, с защищёнными конструкторами `BaseEntity()` (Id из БД) и `BaseEntity(T id)` (Id из приложения).
+  - `Library.Domain/Interfaces/IAuditable` — `CreatedAt`, `UpdatedAt`, `CreatedBy`, `UpdatedBy`.
+  - `Library.Domain/Interfaces/ISoftDeletable` — `IsDeleted`, `DeletedAt`, `DeletedBy`.
+  - Интерфейсы вынесены в корень слоя, `Library.Domain/Interfaces` (namespace `Library.Domain.Interfaces`), отдельно от классов-реализаций в `Entities/Basic`.
+- `<Nullable>disable</Nullable>` временно выставлен в `Library.Domain.csproj` (nullable warnings отключены только в Domain).
 - Композитные интерфейсы (`IAuditableEntity<T>`, `ISoftDeletableEntity<T>`, `IAuditableSoftDeletableEntity<T>`) удалены как избыточные — композиция "Id + аудит/софт-делит" будет через наследование в базовых классах, а не через отдельные интерфейсы.
 - Сущность `Book` (`Library.Domain/Entities/Book.cs`) — наследуется от `BaseEntity`, без аудита/софт-делита пока.
+- Решение: `IAuditable`/`ISoftDeletable` остаются с публичным `set` (в отличие от `Id`, где `set` — `protected`). Причина: значения планируется проставлять снаружи — через EF Core interceptor или аналог, без доступа к внутренностям сущности. Если позже понадобится инкапсуляция через `SetX`-методы — тогда сеттер интерфейса станет либо не нужен (метод работает напрямую с backing-полем), либо `protected` в реализации.
 
 ## В плане
 

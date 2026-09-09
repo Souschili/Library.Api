@@ -13,17 +13,17 @@ Domain-слой в Clean Architecture. Ядро приложения — дом�
 
 ```
 Library.Domain/
+├── Interfaces/
+│   ├── IEntity.cs                   — контракт Id<T>
+│   ├── IAuditable.cs                — контракт аудита (CreatedAt/UpdatedAt/CreatedBy/UpdatedBy)
+│   └── ISoftDeletable.cs            — контракт мягкого удаления (IsDeleted/DeletedAt/DeletedBy)
 └── Entities/
-    ├── Book.cs                          — доменная сущность "Книга"
+    ├── Book.cs                      — доменная сущность "Книга"
     └── Basic/
-        ├── BaseEntity.cs                — BaseEntity<T> / BaseEntity (= BaseEntity<int>), реализация Id
-        └── Interfaces/
-            ├── IEntity.cs                — контракт Id<T>
-            ├── IAuditable.cs             — контракт аудита (CreatedAt/UpdatedAt/CreatedBy/UpdatedBy)
-            └── ISoftDeletable.cs         — контракт мягкого удаления (IsDeleted/DeletedAt/DeletedBy)
+        └── BaseEntity.cs            — BaseEntity<T> / BaseEntity (= BaseEntity<int>), реализация Id
 ```
 
-Интерфейсы (`Interfaces/`) отделены от классов-реализаций (`Basic/`), чтобы не смешивать контракты и готовую реализацию в одной папке.
+Интерфейсы (`Interfaces/`) вынесены в корень слоя и отделены от классов-реализаций (`Entities/Basic/`), чтобы не смешивать контракты и готовую реализацию в одной папке.
 
 ## Конвенции
 

@@ -1,4 +1,4 @@
-namespace Library.Domain.Entities.Basic.Interfaces
+namespace Library.Domain.Interfaces
 {
     public interface ISoftDeletable
     {
