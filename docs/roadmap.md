@@ -15,6 +15,8 @@
 - Композитные интерфейсы (`IAuditableEntity<T>`, `ISoftDeletableEntity<T>`, `IAuditableSoftDeletableEntity<T>`) удалены как избыточные — композиция "Id + аудит/софт-делит" будет через наследование в базовых классах, а не через отдельные интерфейсы.
 - Сущность `Book` (`Library.Domain/Entities/Book.cs`) — наследуется от `BaseEntity`, без аудита/софт-делита пока.
 - Решение: `IAuditable`/`ISoftDeletable` остаются с публичным `set` (в отличие от `Id`, где `set` — `protected`). Причина: значения планируется проставлять снаружи — через EF Core interceptor или аналог, без доступа к внутренностям сущности. Если позже понадобится инкапсуляция через `SetX`-методы — тогда сеттер интерфейса станет либо не нужен (метод работает напрямую с backing-полем), либо `protected` в реализации.
+- Сверка с реальным кодом MMS (`MMS.Domain/Entities/Base/{BaseEntity,AuditableEntity}.cs`, `MMS.Domain/Interfaces/{IEntity,ICreatable,IAuditable,ISoftDelete}.cs`, `SoftDeleteQueryExtension.cs`) — подтвердила паттерн "маркер-интерфейс + автообнаружение сущностей в interceptor/query filter", тот же принцип, что мы закладываем. Отличие: у MMS мутация полей аудита идёт через `protected`-методы (`SetCreatedBy`, `MarkAsDeleted` и т.д.), вызываемые явно из доменных методов сущности с `userId` от Application-слоя — у нас проще, через публичный `set` прямо из interceptor, без явных доменных методов на каждой сущности. Осознанный выбор в пользу меньшего boilerplate; MMS-подход более строгий, но требует `User`-сущности и явного шага в каждом хендлере.
+- Замечено (не копируем): `BaseEntity<TId>` у MMS использует EF Core атрибуты `[Key]`/`[DatabaseGenerated]` прямо в Domain-слое — нарушает Clean Architecture. У нас Domain остаётся чистым от EF Core.
 
 ## В плане
 
@@ -41,3 +43,9 @@
 
 - Нужен ли `CreatedBy`/`UpdatedBy`/`DeletedBy` как `string?` (текущий вариант) или как ссылка на будущую сущность `User` (`Guid?`/`int?` + FK)?
 - Формат хранения времени — `DateTime` (текущий) vs `DateTimeOffset`/явный UTC-суффикс в имени свойств.
+
+## Точка остановки (2026-09-09)
+
+Все дизайн-решения по `Id`/аудиту/софт-делиту приняты и зафиксированы выше (см. "Сделано"). Следующий конкретный шаг — написать базовые классы `AuditableEntity<T>`, `SoftDeletableEntity<T>`, `AuditableSoftDeletableEntity<T>` (+ non-generic варианты) в `Library.Domain/Entities/Basic`, по образцу `BaseEntity`. Ничего не блокирует начало — просто ещё не сделано.
+
+Разговор поставлен на паузу: пользователь переключается на работу над ТЗ.
