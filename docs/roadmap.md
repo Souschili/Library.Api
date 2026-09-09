@@ -17,16 +17,17 @@
 - Решение: `IAuditable`/`ISoftDeletable` остаются с публичным `set` (в отличие от `Id`, где `set` — `protected`). Причина: значения планируется проставлять снаружи — через EF Core interceptor или аналог, без доступа к внутренностям сущности. Если позже понадобится инкапсуляция через `SetX`-методы — тогда сеттер интерфейса станет либо не нужен (метод работает напрямую с backing-полем), либо `protected` в реализации.
 - Сверка с реальным кодом MMS (`MMS.Domain/Entities/Base/{BaseEntity,AuditableEntity}.cs`, `MMS.Domain/Interfaces/{IEntity,ICreatable,IAuditable,ISoftDelete}.cs`, `SoftDeleteQueryExtension.cs`) — подтвердила паттерн "маркер-интерфейс + автообнаружение сущностей в interceptor/query filter", тот же принцип, что мы закладываем. Отличие: у MMS мутация полей аудита идёт через `protected`-методы (`SetCreatedBy`, `MarkAsDeleted` и т.д.), вызываемые явно из доменных методов сущности с `userId` от Application-слоя — у нас проще, через публичный `set` прямо из interceptor, без явных доменных методов на каждой сущности. Осознанный выбор в пользу меньшего boilerplate; MMS-подход более строгий, но требует `User`-сущности и явного шага в каждом хендлере.
 - Замечено (не копируем): `BaseEntity<TId>` у MMS использует EF Core атрибуты `[Key]`/`[DatabaseGenerated]` прямо в Domain-слое — нарушает Clean Architecture. У нас Domain остаётся чистым от EF Core.
+- Базовые классы аудита/софт-делита в `Library.Domain/Entities/Basic` — реализованы:
+  - `AuditableEntity<T> : BaseEntity<T>, IAuditable` (+ non-generic `AuditableEntity`).
+  - `SoftDeletableEntity<T> : BaseEntity<T>, ISoftDeletable` (+ non-generic `SoftDeletableEntity`).
+  - `AuditableSoftDeletableEntity<T> : BaseEntity<T>, IAuditable, ISoftDeletable` (+ non-generic `AuditableSoftDeletableEntity`).
+  - Паттерн — как у `BaseEntity`: non-generic наследует от `<int>`-версии, конструкторы `protected` (пустой + с `id`, вызывающий `base(id)`). Сборка `Library.Domain` проходит без ошибок (только уже существующие warning CS8632 по nullable-аннотациям, не регрессия).
 
 ## В плане
 
 ### Аудит и мягкое удаление
 
-1. Базовые классы в `Library.Domain/Entities/Basic`:
-   - `AuditableEntity<T> : BaseEntity<T>, IAuditable`
-   - `SoftDeletableEntity<T> : BaseEntity<T>, ISoftDeletable`
-   - `AuditableSoftDeletableEntity<T> : BaseEntity<T>, IAuditable, ISoftDeletable`
-   - Каждый — с non-generic вариантом (`AuditableEntity : AuditableEntity<int>` и т.д.), по аналогии с `BaseEntity`.
+1. ~~Базовые классы в `Library.Domain/Entities/Basic`~~ — сделано (см. выше).
 2. `Book` — решить, нужен ли ему аудит/софт-делит, и перевести на соответствующий базовый класс.
 3. Инфраструктура (`Library.Infrastructure`, когда появится EF Core):
    - `SaveChangesInterceptor`, который проставляет `CreatedAt/CreatedBy` при добавлении и `UpdatedAt/UpdatedBy` при изменении сущностей, реализующих `IAuditable`.
@@ -46,6 +47,4 @@
 
 ## Точка остановки (2026-09-09)
 
-Все дизайн-решения по `Id`/аудиту/софт-делиту приняты и зафиксированы выше (см. "Сделано"). Следующий конкретный шаг — написать базовые классы `AuditableEntity<T>`, `SoftDeletableEntity<T>`, `AuditableSoftDeletableEntity<T>` (+ non-generic варианты) в `Library.Domain/Entities/Basic`, по образцу `BaseEntity`. Ничего не блокирует начало — просто ещё не сделано.
-
-Разговор поставлен на паузу: пользователь переключается на работу над ТЗ.
+Базовые классы аудита/софт-делита написаны и собираются (см. "Сделано"). Следующий конкретный шаг — пункт 2 плана: решить, нужен ли `Book` аудит/софт-делит, и перевести его на `AuditableEntity`/`SoftDeletableEntity`/`AuditableSoftDeletableEntity` при необходимости. Ничего не блокирует — просто ещё не сделано.
